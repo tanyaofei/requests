@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -50,7 +51,7 @@ type request struct {
 // 并且 将 request.Data 写入到 http.Request 的 Body 中
 func (r *request) prepare() error {
 	if err := r.prepareRawAndBody(); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	r.prepareHeaders()
@@ -74,7 +75,7 @@ func (r *request) prepareRawAndBody() error {
 		// application/json body
 		jsonBytes, err := json.Marshal(r.Json)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		body = bytes.NewBuffer(jsonBytes)
 		if contentType == "" {
@@ -89,7 +90,7 @@ func (r *request) prepareRawAndBody() error {
 		for k, v := range r.Files {
 			err := writer.WriteField(k, string(*v))
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 		}
 
@@ -98,7 +99,7 @@ func (r *request) prepareRawAndBody() error {
 			for k, v := range r.Data {
 				err := writer.WriteField(k, v)
 				if err != nil {
-					return err
+					return errors.WithStack(err)
 				}
 			}
 		}

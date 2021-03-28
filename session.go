@@ -2,6 +2,7 @@ package requests
 
 import (
 	"crypto/tls"
+	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	urllib "net/url"
@@ -10,13 +11,13 @@ import (
 )
 
 type session struct {
-	Headers       Headers
-	Params        Params
-	Verify        Verify
-	AllowRedirect AllowRedirect
-	Cookies       []*http.Cookie
-	Proxy         Proxy
-	raw           *http.Client
+	Headers  Headers
+	Params   Params
+	Verify   Verify
+	Redirect Redirect
+	Cookies  []*http.Cookie
+	Proxy    Proxy
+	raw      *http.Client
 }
 
 func (s *session) Get(url string, options ...interface{}) (*Response, error) {
@@ -50,12 +51,13 @@ func (s *session) Options(url string, options ...interface{}) (*Response, error)
 // Request 方法将创建一个 request, 并将 method, url, options 写入该 request 中
 func (s *session) Request(method, url string, options ...interface{}) (*Response, error) {
 	var (
-		req = new(request)
-		err error
+		req      = new(request)
+		err      error
+		redirect = s.Redirect
 	)
 	req.URL, err = urllib.Parse(url)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "failed to parse URL: %s", url)
 	}
 
 	req.Method = method
@@ -109,21 +111,23 @@ func (s *session) Request(method, url string, options ...interface{}) (*Response
 			} else {
 				req.Cookies = append(req.Cookies, opt.([]*http.Cookie)...)
 			}
+		case Redirect:
+			redirect = opt.(Redirect)
 		}
 
 	}
 
 	// sendAndSetCookies http with inner http lib
-	resp, err := s.doRequest(req, nil)
+	resp, err := s.doRequest(req, nil, redirect)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return resp, nil
 }
 
 // sendAndSetCookies 将会发送 http.Request 请求
 // 并将该请求的响应的 Set-Cookie 写入到 session
-func (s *session) sendAndSetCookies(rawReq *http.Request, lastResp *Response) (*http.Response, error) {
+func (s *session) sendAndSetCookies(rawReq *http.Request) (*http.Response, error) {
 	rawResp, err := s.raw.Do(rawReq)
 	if err != nil {
 		return nil, err
@@ -136,15 +140,15 @@ func (s *session) sendAndSetCookies(rawReq *http.Request, lastResp *Response) (*
 
 // doRequest 方法用于调用 sendAndSetCookies 方法发送请求, 同时将会处理 3xx 跳转
 // 收集所有跳转记录写入 Response 并最后返回 Response
-func (s *session) doRequest(req *request, lastResp *Response) (*Response, error) {
+func (s *session) doRequest(req *request, lastResp *Response, redirect Redirect) (*Response, error) {
 	err := req.prepare()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	rawResp, err := s.sendAndSetCookies(req.raw, lastResp)
+	rawResp, err := s.sendAndSetCookies(req.raw)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	currentResp := &Response{Request: req, raw: rawResp}
@@ -158,7 +162,7 @@ func (s *session) doRequest(req *request, lastResp *Response) (*Response, error)
 	}
 
 	// 非 3xx 跳转响应
-	if rawResp.Header.Get("Location") == "" || !s.AllowRedirect {
+	if rawResp.Header.Get("Location") == "" || !redirect {
 		return currentResp, nil
 	}
 
@@ -186,7 +190,7 @@ func (s *session) doRequest(req *request, lastResp *Response) (*Response, error)
 		Params:  s.Params,
 	}
 
-	return s.doRequest(nextReq, currentResp)
+	return s.doRequest(nextReq, currentResp, redirect)
 }
 
 func NewSession(options ...interface{}) (*session, error) {
@@ -204,8 +208,8 @@ func NewSession(options ...interface{}) (*session, error) {
 	}
 
 	s := &session{
-		AllowRedirect: true,
-		Verify:        true,
+		Redirect: true,
+		Verify:   true,
 		raw: &http.Client{
 			Transport: transport,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -240,11 +244,13 @@ func NewSession(options ...interface{}) (*session, error) {
 			}
 		case Proxy:
 			s.Proxy = opt.(Proxy)
-			transport.Proxy = func(r *http.Request) (*urllib.URL, error) {
-				return urllib.Parse(string(s.Proxy))
+			if string(s.Proxy) != "" {
+				transport.Proxy = func(r *http.Request) (*urllib.URL, error) {
+					return urllib.Parse(string(s.Proxy))
+				}
 			}
-		case AllowRedirect:
-			s.AllowRedirect = opt.(AllowRedirect)
+		case Redirect:
+			s.Redirect = opt.(Redirect)
 		}
 
 	}
