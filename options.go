@@ -51,7 +51,7 @@ type Cookies map[string]string // also support []*http.Cookie
 // 	1. 直接使用 requests.Request(), requests.Get(), requests.Post().... 等方法
 //  2. 在使用 requests.NewSession() 方法创建 request.session 对象时指定
 // 注意, 在已经创建的 session 结构体中发送请求不再生效, 如 session.Get() 方法, 这种操作不被支持
-type AllowRedirect bool
+type Redirect bool
 
 // 是否校验 SSL 证书
 // 指定 3xxx 是否自动跳转

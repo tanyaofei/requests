@@ -3,6 +3,7 @@ package requests
 import (
 	"compress/gzip"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	urllib "net/url"
@@ -57,7 +58,7 @@ func (r *Response) Content() (*[]byte, error) {
 		reader, err := gzip.NewReader(r.raw.Body)
 		content, err = ioutil.ReadAll(reader)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		} else {
 			defer reader.Close()
 		}
