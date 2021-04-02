@@ -13,7 +13,7 @@ type Params map[string]string
 //	1. 直接使用 requests.Request() 等方法中使用;
 //	2. 在使用 requests.NewSession() 创建 session 时使用;
 //	3. 使用已经创建的 session 中发送请求时使用
-type Json map[string]string
+type Json map[string]interface{}
 
 // Http Body
 // 如果使用了 Json, Data 不再生效
