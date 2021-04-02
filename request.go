@@ -127,6 +127,9 @@ func (r *request) prepareRawAndBody() error {
 
 	if contentType != "" {
 		raw.Header.Set("Content-Type", contentType)
+		if r.Headers == nil {
+			r.Headers = make(Headers)
+		}
 		r.Headers["Content-Type"] = contentType
 	}
 
