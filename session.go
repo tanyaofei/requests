@@ -12,7 +12,7 @@ import (
 
 type session struct {
 	Headers  Headers
-	Params   Params
+	Params   Query
 	Verify   Verify
 	Redirect Redirect
 	Cookies  []*http.Cookie
@@ -62,7 +62,7 @@ func (s *session) Request(method, url string, options ...interface{}) (*Response
 
 	req.Method = method
 	req.Headers = s.Headers
-	req.Params = s.Params
+	req.Query = s.Params
 	req.Cookies = s.Cookies
 
 	for _, opt := range options {
@@ -89,12 +89,12 @@ func (s *session) Request(method, url string, options ...interface{}) (*Response
 			for k, v := range opt.(http.Header) {
 				s.Headers[k] = v[0]
 			}
-		case Params:
-			if req.Params == nil {
-				req.Params = opt.(Params)
+		case Query:
+			if req.Query == nil {
+				req.Query = opt.(Query)
 			} else {
-				for k, v := range opt.(Params) {
-					req.Params[k] = v
+				for k, v := range opt.(Query) {
+					req.Query[k] = v
 				}
 			}
 		case Cookies:
@@ -187,7 +187,7 @@ func (s *session) doRequest(req *request, lastResp *Response, redirect Redirect)
 		URL:     nextURL,
 		Headers: nextHeader,
 		Cookies: s.Cookies,
-		Params:  s.Params,
+		Query:   s.Params,
 	}
 
 	return s.doRequest(nextReq, currentResp, redirect)
@@ -229,8 +229,8 @@ func NewSession(options ...interface{}) (*session, error) {
 			for k, v := range opt.(http.Header) {
 				s.Headers[k] = v[0]
 			}
-		case Params:
-			s.Params = opt.(Params)
+		case Query:
+			s.Params = opt.(Query)
 		case []*http.Cookie:
 			s.Cookies = opt.([]*http.Cookie)
 		case Cookies:

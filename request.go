@@ -32,7 +32,7 @@ type request struct {
 	Files Files
 
 	// HTTP 链接参数
-	Params Params
+	Query Query
 
 	// Cookies
 	Cookies []*http.Cookie
@@ -133,6 +133,14 @@ func (r *request) prepareRawAndBody() error {
 		r.Headers["Content-Type"] = contentType
 	}
 
+	if r.Query != nil {
+		q := r.URL.Query()
+		for k, v := range r.Query {
+			q.Add(k, v)
+		}
+		raw.URL.RawQuery = q.Encode()
+	}
+
 	r.raw = raw
 	return nil
 }
@@ -148,8 +156,8 @@ func (r *request) prepareHeaders() {
 
 // 在调用 prepareParams 应先创建 raw
 func (r *request) prepareParams() {
-	if r.Params != nil {
-		for k, v := range r.Params {
+	if r.Query != nil {
+		for k, v := range r.Query {
 			r.raw.URL.Query().Set(k, v)
 		}
 	}

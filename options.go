@@ -5,7 +5,7 @@ package requests
 //	1. 直接使用 requests.Request() 等方法中使用;
 //	2. 在使用 requests.NewSession() 创建 session 时使用;
 //	3. 使用已经创建的 session 中发送请求时使用
-type Params map[string]string
+type Query map[string]string
 
 // Http Body
 // 如果使用了 Json 则 Data 和 Files 不再生效
