@@ -193,7 +193,7 @@ func (s *session) doRequest(req *request, lastResp *Response, redirect Redirect)
 	return s.doRequest(nextReq, currentResp, redirect)
 }
 
-func NewSession(options ...interface{}) (*session, error) {
+func NewSession(options ...interface{}) *session {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -255,5 +255,5 @@ func NewSession(options ...interface{}) (*session, error) {
 
 	}
 
-	return s, nil
+	return s
 }

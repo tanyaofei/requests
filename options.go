@@ -68,3 +68,6 @@ type Verify bool
 //  2. 在使用 requests.NewSession() 方法创建 request.session 对象时指定
 // 注意, 在已经创建的 session 结构体中发送请求不再生效, 如 session.Get() 方法, 这种操作不被支持
 type Proxy string
+
+// 指定超时
+type Timeout int

@@ -1,7 +1,5 @@
 package requests
 
-import "github.com/pkg/errors"
-
 const (
 	version = "0.1"
 )
@@ -35,9 +33,5 @@ func Options(url string, options ...interface{}) (*Response, error) {
 }
 
 func Request(method, url string, options ...interface{}) (*Response, error) {
-	session, err := NewSession(options...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return session.Request(method, url, options...)
+	return NewSession(options...).Request(method, url, options...)
 }
