@@ -13,7 +13,7 @@ type Response struct {
 	Request  *request
 	History  []*Response
 	Encoding string
-	content  *[]byte        // lazy init after calling Content()
+	content  []byte         // lazy init after calling Content()
 	text     string         // lazy init after calling Text()
 	cookies  []*http.Cookie // lazy init after calling Cookies()
 	raw      *http.Response
@@ -29,7 +29,7 @@ func (r *Response) Text() string {
 	if err != nil {
 		return ""
 	}
-	text := ConvertBytes(content, "UTF-8")
+	text := ConvertBytes(&content, "UTF-8")
 	r.text = text
 	return text
 }
@@ -40,11 +40,11 @@ func (r *Response) Json(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(*content, obj)
+	return json.Unmarshal(content, obj)
 }
 
 // Content 方法将读取响应的 Body 并返回字节数组指针 *[]byte
-func (r *Response) Content() (*[]byte, error) {
+func (r *Response) Content() ([]byte, error) {
 	if r.content != nil {
 		return r.content, nil
 	}
@@ -68,8 +68,8 @@ func (r *Response) Content() (*[]byte, error) {
 			return nil, err
 		}
 	}
-	r.content = &content
-	return &content, nil
+	r.content = content
+	return content, nil
 }
 
 // StatusCode: 获取响应状态码
