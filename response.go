@@ -53,14 +53,14 @@ func (r *Response) Content() ([]byte, error) {
 		content []byte
 		err     error
 	)
+	defer r.raw.Body.Close()
 	switch r.raw.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, err := gzip.NewReader(r.raw.Body)
+		defer reader.Close()
 		content, err = ioutil.ReadAll(reader)
 		if err != nil {
 			return nil, errors.WithStack(err)
-		} else {
-			defer reader.Close()
 		}
 	default:
 		content, err = ioutil.ReadAll(r.raw.Body)
