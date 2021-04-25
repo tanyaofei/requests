@@ -1,10 +1,7 @@
 package requests
 
 import (
-	"compress/gzip"
 	"encoding/json"
-	"github.com/pkg/errors"
-	"io/ioutil"
 	"net/http"
 	urllib "net/url"
 )
@@ -13,7 +10,7 @@ type Response struct {
 	Request  *request
 	History  []*Response
 	Encoding string
-	content  []byte         // lazy init after calling Content()
+	Content  []byte
 	text     string         // lazy init after calling Text()
 	cookies  []*http.Cookie // lazy init after calling Cookies()
 	raw      *http.Response
@@ -24,52 +21,35 @@ func (r *Response) Text() string {
 	if r.text != "" {
 		return r.text
 	}
-
-	content, err := r.Content()
-	if err != nil {
-		return ""
-	}
-	text := ConvertBytes(&content, "UTF-8")
+	text := ConvertBytes(&r.Content, "UTF-8")
 	r.text = text
 	return text
 }
 
 // Json 方法将响应转为 JSON
 func (r *Response) Json(obj interface{}) error {
-	content, err := r.Content()
+	return json.Unmarshal(r.Content, obj)
+}
+
+// readUnencodedBodyClose 方法将读取响应的 Body 并返回字节数组指针 *[]byte
+func (r *Response) readBodyClose() error {
+	var (
+		content []byte
+		err error
+	)
+	switch r.raw.Header.Get("Content-Encoding") {
+	case "gzip":
+		content, err = readGzipBodyClose(r.raw.Body)
+	default:
+		content, err = readUnencodedBodyClose(r.raw.Body)
+	}
+
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(content, obj)
-}
 
-// Content 方法将读取响应的 Body 并返回字节数组指针 *[]byte
-func (r *Response) Content() ([]byte, error) {
-	if r.content != nil {
-		return r.content, nil
-	}
-
-	var (
-		content []byte
-		err     error
-	)
-	defer r.raw.Body.Close()
-	switch r.raw.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err := gzip.NewReader(r.raw.Body)
-		defer reader.Close()
-		content, err = ioutil.ReadAll(reader)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	default:
-		content, err = ioutil.ReadAll(r.raw.Body)
-		if err != nil {
-			return nil, err
-		}
-	}
-	r.content = content
-	return content, nil
+	r.Content = content
+	return nil
 }
 
 // StatusCode: 获取响应状态码

@@ -152,6 +152,11 @@ func (s *session) doRequest(req *request, lastResp *Response, redirect Redirect)
 	}
 
 	currentResp := &Response{Request: req, raw: rawResp}
+	err = currentResp.readBodyClose()
+	if err != nil {
+		return nil, err
+	}
+
 	// 收集 history
 	if lastResp != nil {
 		if lastResp.History != nil {
