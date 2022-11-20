@@ -134,7 +134,17 @@ func (s *session) sendAndSetCookies(rawReq *http.Request) (*http.Response, error
 	}
 
 	// set cookie into session from Response
-	s.Cookies = append(s.Cookies, rawResp.Cookies()...)
+	for _, cookie := range rawResp.Cookies() {
+		if cookie.Domain == "" {
+			cookie.Domain = rawResp.Request.URL.Host
+		}
+		for i, existed := range s.Cookies {
+			if existed.Name == cookie.Name && existed.Domain == cookie.Domain && existed.Path == cookie.Path {
+				s.Cookies = append(s.Cookies[:i], s.Cookies[i+1:]...)
+			}
+		}
+		s.Cookies = append(s.Cookies, cookie)
+	}
 	return rawResp, nil
 }
 
