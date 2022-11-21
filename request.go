@@ -167,7 +167,7 @@ func (r *request) prepareParams() {
 func (r *request) prepareCookies() {
 	if r.Cookies != nil {
 		for _, cookie := range r.Cookies {
-			if cookie.Domain != r.URL.Host {
+			if cookie.Domain != "" && cookie.Domain != r.URL.Host {
 				continue
 			}
 			if cookie.Path != "" && !strings.HasPrefix(r.URL.Path, cookie.Path) {
